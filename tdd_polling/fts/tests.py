@@ -10,18 +10,19 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 import factory
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
-class UserFactory(factory.Factory):
+class UserFactory(factory.DjangoModelFactory):
     FACTORY_FOR = User
 
     email = 'admin@admin.com'
     username = 'admin'
     password = 'adm1n'
 
-
     is_superuser = True
+    is_staff = True
     is_active = True
 
     @classmethod
@@ -34,13 +35,12 @@ class UserFactory(factory.Factory):
                 user.save()
         return user
 
-
 class PollsTest(LiveServerTestCase):
 
     def setUp(self):
         self.browser = webdriver.Firefox()
         self.browser.implicitly_wait(3)
-        UserFactory.create()
+        self.user = UserFactory.create()
 
 
     def tearDown(self):
@@ -52,11 +52,6 @@ class PollsTest(LiveServerTestCase):
         body = self.browser.find_element_by_tag_name('body')
         self.assertIn('Django administration', body.text)
 
-
-
-        user =  User.objects.filter(id=1)
-        # print user._meta.get_field('password')
-
         username_field = self.browser.find_element_by_name('username')
         username_field.send_keys('admin')
 
@@ -67,7 +62,7 @@ class PollsTest(LiveServerTestCase):
         body = self.browser.find_element_by_tag_name('body')
         self.assertIn('Site administration', body.text)
 
-        polls_links = self.browser.find_element_by_link_text('Polls')
+        polls_links = self.browser.find_elements_by_link_text('Polls')
         self.assertEqual(len(polls_links), 2)
 
 
