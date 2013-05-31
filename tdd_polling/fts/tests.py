@@ -9,12 +9,39 @@ from django.test import LiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
+import factory
+from django.contrib.auth.models import User
+
+
+class UserFactory(factory.Factory):
+    FACTORY_FOR = User
+
+    email = 'admin@admin.com'
+    username = 'admin'
+    password = 'adm1n'
+
+
+    is_superuser = True
+    is_active = True
+
+    @classmethod
+    def _prepare(cls, create, **kwargs):
+        password = kwargs.pop('password', None)
+        user = super(UserFactory, cls)._prepare(create, **kwargs)
+        if password:
+            user.set_password(password)
+            if create:
+                user.save()
+        return user
+
 
 class PollsTest(LiveServerTestCase):
 
     def setUp(self):
         self.browser = webdriver.Firefox()
         self.browser.implicitly_wait(3)
+        UserFactory.create()
+
 
     def tearDown(self):
         self.browser.quit()
@@ -24,6 +51,11 @@ class PollsTest(LiveServerTestCase):
 
         body = self.browser.find_element_by_tag_name('body')
         self.assertIn('Django administration', body.text)
+
+
+
+        user =  User.objects.filter(id=1)
+        # print user._meta.get_field('password')
 
         username_field = self.browser.find_element_by_name('username')
         username_field.send_keys('admin')
